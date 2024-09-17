@@ -124,9 +124,28 @@ let recherche_iter t elm =
       d := m 
   done;
 
-  
+
   let _ = print_endline ("Final : g=" ^ string_of_int !g ^ ", d=" ^ string_of_int !d) in
   t.(!g) = elm
+
+
+
+
+(* Exo 6 *)
+let rec fact n = 
+  if n=1 then 1
+  else n * fact (n-1)
+  
+let fact_iter n = 
+  if n <= 0 then raise (Invalid_argument "n doit etre positif!!!!!!!!!!!!!!!!!!!")
+  else
+    let r = ref 1 in
+    for i=1 to n do
+      r := !r * i
+    done;
+    r
+
+
 
 (* //////////////////////////// *)
 (* //////// LES TESTS ///////// *)
