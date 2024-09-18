@@ -143,9 +143,23 @@ let fact_iter n =
     for i=1 to n do
       r := !r * i
     done;
-    r
+    !r
 
 
+(* Exo 7 *)
+let prime_fact (n : int) : int list = 
+  
+  let r = ref n in
+  let primes = ref [] in
+  
+  for i=2 to n do
+    while (!r mod i) = 0 do
+      primes := i :: !primes;
+      r := !r / i;
+    done;
+  done;
+
+  !primes
 
 (* //////////////////////////// *)
 (* //////// LES TESTS ///////// *)
@@ -189,7 +203,18 @@ let is_dedans_it = recherche_iter t 2
 let is_dedans2 = recherche_rec t 7
 let is_dedans2_it = recherche_iter t 7
 
+(* test fact *)
+
+let n = 40
+let f = fact n
+let f2 = fact_iter n
+(*Omg ça donne des trucs negatifs*)
+
+
+(* Test facteur premiers *)
+let facts = prime_fact 8
+let fACTS = prime_fact 168
+let nan_vraiment_les_FACTS = prime_fact 7811
+
+
 ;;
-
-
-
