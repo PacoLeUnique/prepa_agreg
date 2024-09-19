@@ -37,7 +37,7 @@ for i in range(len(records)):
     vitesse_vent = float(r.vitesse_vent) * 3.6
 
     #str -> pourcentage
-    humidite = float(r.humidite) / 100
+    humidite = int(r.humidite)
 
     #str -> float
     precipitations = float(r.precipitations)
@@ -68,7 +68,8 @@ def id_station_max_vent(records : list[Record]) -> str:
     r : Record = max((r for r in records), key= lambda r:r.vitesse_vent)
     return r.uid
 
-#8. Fetch infos sur les stations
+#8.
+#  Fetch infos sur les stations
 Station = namedtuple("Station", ["nom", "latitude", "longitude", "altitude"])
 
 stations : dict[str, Station] = {}
@@ -77,13 +78,92 @@ with open("postesSynop.csv", "r") as f:
     for line in dr:
         stations[line["ID"]] = Station(line["Nom"], line["Latitude"], line["Longitude"], line["Altitude"])
 
-print("stations :")
-print(stations)
+
+for s in stations:  print(stations[s])
+
+
+#9.
+def humidite_moyenne(records : list[Record]) -> float:
+    """Renvoie le taux d'humidité moyenne sur l'ensemble des relevés."""
+    
+    humi : int = 0
+    for r in records:
+        humi += r.humidite
+    return humi / len(records)
+
+#10.
+def precipitation_moyenne_mais_seulement_venant_des_stations_dont_luid_est_compris_entre_60000_et_69999(records : list[Record]) -> float:
+    """Franchement, lis juste le nom de la fonction."""
+
+    precipit : float = 0.
+    nb_stations : int = 0
+    for r in records:
+        if int(r.uid) >= 60000 and int(r.uid) < 70000:
+            nb_stations += 1
+            precipit += r.precipitations
+    return precipit / nb_stations
+
+
+#11. (+13.)
+def get_records(records: list[Record], uid : str, is_records_sorted=False) -> Record:
+    """Renvoie tous les records d'une station donnée."""
+
+    records_station : list[Record] = []
+
+    #Les records sont pas triés (complexité : O(n))
+    if not is_records_sorted:
+        for r in records:
+            if r.uid == uid:
+                records_station.append(r)
+
+    #Les records sont triés (complexité : O(log(n) + |records d'id uid|))
+    else:
+        pass #TODO
+
+    return records_station
+
+#12.
+def sort_records(records : list[Record]):
+    """Trie les records, par ordre d'uid croissant."""
+    records.sort(key= lambda r:int(r.uid))
+
+
+# ===================== FUSION DE TABLES =====================
+
+
+
 
 
 def test():
     print("")
     print(f"Temp min relevée : {temperature_min(records)}°C")
-    print(f"uid de la station du vent max : {id_station_max_vent(records)}")
+
+    uid : str = id_station_max_vent(records)
+    print(f"uid de la station du vent max : {uid}")
+    print(f"Le nom de cette station : {stations[uid].nom}")
+
+    print(f"Humidité moyenne : {round(humidite_moyenne(records), 2)}%")
+    print(f"précipitations moyennes des stations entre 60000 et 69999 : {precipitation_moyenne_mais_seulement_venant_des_stations_dont_luid_est_compris_entre_60000_et_69999(records)}")
+
+    print("\n=============================")
+
+    id = "07005"
+    recs = get_records(records, id)
+    print(f"Il y a {len(recs)} records enregistrés par la station {id}. Pas mal !")
+    print(f"les 10 1ers relevés de la station 07005 : ")
+    for i in range(10):
+        print(recs[i])
+
+    print("\n allez hop on sort les records")
+    sort_records(records)
+    print("flemme de l'afficher pck c'est trop de lignes, mais t'as l'idée")
+    #print("les voicis triés :")
+    #for i in range(1000):
+    #    print(records[-i])
+
+
+
+
+
 
 test()
