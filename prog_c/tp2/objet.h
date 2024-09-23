@@ -3,4 +3,6 @@ struct objet {
     int v;
 };
 
-struct objet* extract_object(char* path);
+/** Extrait les données du fichier.
+ */
+struct objet* extract_object(char* path, int* n_Pmax);
