@@ -68,7 +68,14 @@ let sum debut fin f =
 (* Exo 6 *)
 let wrap a = fun () -> a
 
+let next, reset =
+  let n = ref 0 in
+  (fun () -> (n := !n+1; !n)),
+  (fun () -> (n := 0))
 
+let un = next()
+let deux = next()
+let trois = next()
 
 (* =====================*)
 (* ======TEST EXOS======*)

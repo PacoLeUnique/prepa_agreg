@@ -1,6 +1,8 @@
 import csv
 from collections import namedtuple
 from datetime import datetime
+from datetime import *
+import matplotlib.pyplot as plt
 
 
 # ================== NETTOYAGE DES DONNEES ==================
@@ -8,45 +10,53 @@ from datetime import datetime
 Record = namedtuple("Record", ["uid", "vitesse_vent", "temperature", "humidite", "precipitations", "date"])
 
 # 1+2 : fetch la data
-records : list[Record] = []
+def extract_table(file : str) -> list[Record]:
+    """Extrait les donnes du csv, et renvoie la liste de tous ses records."""
+    
+    records : list[Record] = []
+    with open(file, "r") as f:
+        dr : csv.DictReader = csv.DictReader(f, delimiter=";") 
+        for line in dr:
+            records.append(Record(line["numer_sta"], line["ff"], line["t"], line["u"], line["rr1"], line["date"]))
 
-with open("synop.201902.csv", "r") as f:
-    dr : csv.DictReader = csv.DictReader(f, delimiter=";") 
-    for line in dr:
-        records.append(Record(line["numer_sta"], line["ff"], line["t"], line["u"], line["rr1"], line["date"]))
+    print("records au début :", len(records))
 
-print("records au début :", len(records))
+    # 3. On vire les champs incomplets (ceux ou il y a des mq)
+    records = [r for r in records if all([v != 'mq' for v in r])]
 
-# 3. On vire les champs incomplets (ceux ou il y a des mq)
-records = [r for r in records if all([v != 'mq' for v in r])]
+    print("Après avoir enlevé les champs avec des trous :", len(records))
 
-print("Après avoir enlevé les champs avec des trous :", len(records))
+    print("avant :")
+    for i in range(10):
+        print(records[i])
 
-print("avant :")
-for i in range(10):
-    print(records[i])
 
-# 4. On convertit les champs dans le bon type
-for i in range(len(records)):
-    r = records[i]
+    # 4. On convertit les champs dans le bon type
+    for i in range(len(records)):
+        r = records[i]
 
-    #str -> degré Kelvin -> degré Celcius
-    temperature = float(r.temperature) - 273
+        #str -> degré Kelvin -> degré Celcius
+        temperature = float(r.temperature) - 273
 
-    #str -> m/s -> km/h
-    vitesse_vent = float(r.vitesse_vent) * 3.6
+        #str -> m/s -> km/h
+        vitesse_vent = float(r.vitesse_vent) * 3.6
 
-    #str -> pourcentage
-    humidite = int(r.humidite)
+        #str -> pourcentage
+        humidite = int(r.humidite)
 
-    #str -> float
-    precipitations = float(r.precipitations)
+        #str -> float
+        precipitations = float(r.precipitations)
 
-    #str -> date
-    date = datetime.strptime(r.date, "%Y%m%d%H%M%S")
+        #str -> date
+        date = datetime.strptime(r.date, "%Y%m%d%H%M%S")
 
-    records[i] = Record(r.uid, vitesse_vent, temperature, humidite, precipitations, date)
+        records[i] = Record(r.uid, vitesse_vent, temperature, humidite, precipitations, date)
 
+    return records
+
+
+records : list[Record] = extract_table("synop.201902.csv")
+records2009 : list[Record] = extract_table("synop.200902.csv")
 
 # Affichage des 10 premières lignes
 print("après :")
@@ -118,7 +128,38 @@ def get_records(records: list[Record], uid : str, is_records_sorted=False) -> Re
 
     #Les records sont triés (complexité : O(log(n) + |records d'id uid|))
     else:
-        pass #TODO
+        
+        # 1. On cherche par dichotomie une station avec le bon uid
+        g = 0
+        d = len(records)-1
+        m = 0
+
+        while (int(records[m].uid) != int(uid)) and (g != d):
+            print(f"passe à [{g}:{d}]")
+
+            m = (g+d)//2
+            if int(uid) < int(records[m].uid):
+                d = m-1
+            else:
+                g = m
+        
+        if (g == d) and int(records[m].uid) != int(uid):
+            raise ValueError(f"y'a pas de station d'id {int(uid)}")
+
+        # 2. à partir de m, on s'étend à droite et a gauche
+        records_station.append(records[m])
+        
+        # eeeeet a droite
+        i = 1
+        while int(records[m+i].uid) == int(uid):
+            records_station.append(records[m+i])
+            i += 1
+
+        # eeeeeeeeet a gauche
+        i = 1
+        while int(records[m-i].uid) == int(uid):
+            records_station.append(records[m-i])
+            i += 1
 
     return records_station
 
@@ -130,9 +171,62 @@ def sort_records(records : list[Record]):
 
 # ===================== FUSION DE TABLES =====================
 
+def meme_date(d1 : datetime, d2 : datetime):
+    """Renvoie True si d1 et d2 sont les mêmes, à l'année près."""
+    return (    d1.month == d2.month
+            and d1.day == d2.day
+            and d1.hour == d2.hour)
+
+
+#14.
+Temperature = namedtuple("Temperature", ["uid", "date", "tmp_2009", "tmp_2019"])
+def merge_temperatures_de_fevrier(records2019 : list[Record], records2009 : list[Record]) -> list[Temperature]:
+    """Fusionne 2 tables ayant les memes record, à des années différentes.
+       Ne garde que la température du mois de février.
+    """
+
+    fev09 : list[Record] = [r for r in records2009 if r.date.month == 2]
+    fev19 : list[Record] = [r for r in records2019 if r.date.month == 2]
+
+    temperatures : list[Temperature] = []
+    for r09 in fev09:
+        for r19 in fev19:
+            if meme_date(r19.date, r09.date):
+                temperatures.append(Temperature(r09.uid, r09.date, r09.temperature, r19.temperature))
+                break
+
+    return temperatures
+
+#15.
+def qui_est_le_plus_chaud(temperatures : list[Temperature]) -> str:
+    """Renvoie l'année ou il a fait le plus chaud.
+    Donc soit 2009, soit 2019.
+    """
+
+    chaud2009 = 0
+    chaud2019 = 0
+    for t in temperatures:
+        if t.tmp_2009 > t.tmp_2019 : chaud2009 += 1
+        else:  chaud2019 += 1
+    
+    return "2009" if chaud2009>chaud2019 else "2019"
 
 
 
+# ===================== GRAPHIQUES =====================
+
+#16.
+def show_temperatures(temperatures : list[Temperature]):
+    """crée un graphique qui montre les différences de températures entre février 2009 et février 2019.
+    """
+    pass
+
+
+
+
+# ==============================================================
+# ========================= LE TESTING =========================
+# ==============================================================
 
 def test():
     print("")
@@ -145,7 +239,7 @@ def test():
     print(f"Humidité moyenne : {round(humidite_moyenne(records), 2)}%")
     print(f"précipitations moyennes des stations entre 60000 et 69999 : {precipitation_moyenne_mais_seulement_venant_des_stations_dont_luid_est_compris_entre_60000_et_69999(records)}")
 
-    print("\n=============================")
+    print("\n=============================\n")
 
     id = "07005"
     recs = get_records(records, id)
@@ -154,13 +248,25 @@ def test():
     for i in range(10):
         print(recs[i])
 
-    print("\n allez hop on sort les records")
+    print("allez hop on sort les records")
     sort_records(records)
-    print("flemme de l'afficher pck c'est trop de lignes, mais t'as l'idée")
-    #print("les voicis triés :")
-    #for i in range(1000):
-    #    print(records[-i])
+    
+    id2 = "07072"
+    recs = get_records(records, id2, is_records_sorted=True)
 
+    print(f"les record de la station {id} :")
+    for i in range(10):
+        print(recs[i])
+
+    print("\n================FUSION DE TABLE================\n")
+
+    temperatures = merge_temperatures_de_fevrier(records, records2009)
+    print("quelques températures de février :")
+    for i in range(5):
+        print(temperatures[i])
+
+    plus_chaud : str = qui_est_le_plus_chaud(temperatures)
+    print(f"et le plus chaud c'est {plus_chaud}")
 
 
 

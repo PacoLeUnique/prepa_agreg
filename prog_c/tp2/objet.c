@@ -3,9 +3,7 @@
 #include <stdlib.h>
 
 struct objet* extract_object(char* path, int* n_Pmax){
-
-    //printf("Extraction de fichier\n");
-
+    
     FILE *f = fopen(path, "r");
 
     // === On fetch l'en-tete ===
@@ -22,6 +20,7 @@ struct objet* extract_object(char* path, int* n_Pmax){
 
     for(int i=0; i<n; i++){
         fscanf(f, "%d,%d", &p, &v);
+        //printf("Ligne %d -> (%d, %d)\n", i, p, v);
 
         struct objet e = {p, v};
         tab[i] = e;

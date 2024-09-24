@@ -7,13 +7,13 @@ module Double_liste =
 
     type 'a double_liste = {mutable tete : 'a bloc option}
     
-    let empty_bloc = {v = None; next = None; prev = None} 
+    (*    let empty_bloc = {v = None; next = None; prev = None} *)
     let single_bloc v = {v = v; next = None; prev = None} 
     
     let empty = {tete = None}
 
     let single valeur = 
-      let first = {v = valeur; next = None; prev = None} in
+      let first = single_bloc valeur in
       {tete = Some first}
     
     let is_empty l = 
@@ -62,6 +62,13 @@ module Double_liste =
             else get_b (bloc.next) elm (acc+1)
       in
       get_b (l.tete) elm 0
+
+
+      let is l1 l2 = (l1 == l2)
+
+      
+
+
 
   end
 
