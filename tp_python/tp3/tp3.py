@@ -75,7 +75,7 @@ def temperature_min(records : list[Record]) -> float:
 #7.
 def id_station_max_vent(records : list[Record]) -> str:
     """Renvoie l'id de la station météo ayant relevé la vitesse maximale de vent."""
-    r : Record = max((r for r in records), key= lambda r:r.vitesse_vent)
+    r : Record = max(records, key= lambda r:r.vitesse_vent)
     return r.uid
 
 #8.
