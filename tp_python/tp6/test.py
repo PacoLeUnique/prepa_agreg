@@ -3,6 +3,11 @@ import sys
 
 a = Letter("a")
 b = Letter("b")
+c = Letter("c")
+d = Letter("d")
+#Pas de e pour éviter la confusion avec expression
+f = Letter("f")
+
 
 def test_eq():
     """Teste si l'égalité entre expression marche bien."""
@@ -82,6 +87,27 @@ def question5():
     e = Times( a, b, b, Plus(a, b), Empty(), Star(Epsilon()) )
     assert expand(e) == Empty()
     print("OK.")
+
+    print("Test distrib....")
+    e = Times(Plus(b,c), Plus(d,f), a)
+    e2 = Plus(Times(a,b,d), Times(a,b,f), Times(a,c,d), Times(a,c,f))
+    print(expand(e))
+    assert expand(e) == e2
+
+    e3 = Times(a, Plus(b,c))
+    print(expand(e3))
+    assert expand(e3) == Plus(Times(a,b), Times(a,c))
+    
+    e4 = Times(a, Plus(b, Epsilon()), Epsilon())
+    print(expand(e4))
+    assert expand(e4) == Plus(Times(a,b), a)
+
+    e5 = Times(a, Plus(Star(b),c))
+    print(expand(e5))
+    assert expand(e5) == Plus(Times(a,Star(b)), Times(a,c))
+    print("OK.")
+
+
 
 
 # > python3 test.py exo1

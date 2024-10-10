@@ -43,12 +43,12 @@ class Expression:
             #Précondition : len(self.args) >= 2
             case Op.PLUS:
                 str_args = [str(arg) for arg in self.args]
-                return " + ".join(str_args)
+                return "(" + " + ".join(str_args) + ")"
             
             #Précondition : len(self.args) >= 2
             case Op.TIMES:
                 str_args = [str(arg) for arg in self.args]
-                return "·".join(str_args)
+                return "[" + "·".join(str_args) + "]"
             
             #Précondition : len(self.args) = 1
             case Op.STAR:
@@ -140,48 +140,6 @@ def expand(e : Expression) -> Expression:
             return e
 
         # 2 règles :
-        #   1 : a + Ø --> a
-        #   2 : a + (b+c) --> a+b+c
-        case Op.PLUS:
-            
-            # Règle 1 : on vire les empty, et on expand récursivement
-            args : list[Expression] = [expand(arg) for arg in e.args if arg != Empty()]
-
-            # Règle 2 : si on trouve un + dans les args, on l'expand new_args
-            new_args : list[Expression] = []
-            for arg in args:
-                if arg.op == Op.PLUS:
-                    new_args += arg.args
-                else:
-                    new_args.append(arg)
-            
-            # --> Une fois tout concaténé,et on renvoie la nouvelle liste
-            return Plus(*(new_args))
-
-        # 3 règles : 
-        #   1 : a·Ø --> Ø   (multiplication par 0)
-        #   2 : a·ε --> a   (multiplication par 1)
-        #   3 : a·(b+c) --> a·b + a·c
-        case Op.TIMES:
-
-            # Regle 1 : si y'a un empty, c'est cuit
-            if Empty() in (arg for arg in e.args):
-                return Empty()
-
-            # Règle 2 : on vire les ε, et on expand le reste
-            args : list[Expression] = [expand(arg) for arg in e.args if arg != Epsilon()]
-            
-            # Règle 3 : on distribue 
-            
-            #TODO
-            # 1. On sépare les termes à distribuer du reste
-            plus_args = [arg for arg in e.args if arg.op == Op.PLUS]
-            
-
-
-            return e
-
-        # 2 règles :
         #  1 : (a*)* --> a*  
         #  2 :  Ø*   --> ε
         case Op.STAR:
@@ -197,3 +155,86 @@ def expand(e : Expression) -> Expression:
             
             # Sinon, on continue la récurrence
             return Star( expand(a) )
+
+        # 2 règles :
+        #   1 : a + Ø --> a
+        #   2 : a + (b+c) --> a+b+c
+        case Op.PLUS:
+            
+            # Règle 1 : on vire les empty, et on expand récursivement
+            args : list[Expression] = [expand(arg) for arg in e.args if arg != Empty()]
+
+            # Règle 2 : si on trouve un + dans les args, on l'ajoute dans new_args
+            new_args : list[Expression] = []
+            for arg in args:
+                if arg.op == Op.PLUS:
+                    new_args += arg.args
+                else:
+                    new_args.append(arg)
+            
+            # --> Une fois tout concaténé,et on renvoie la nouvelle liste
+            return Plus(*(new_args))
+
+
+        # 3 règles : 
+        #   1 : a·Ø --> Ø   (multiplication par 0)
+        #   2 : a·ε --> a   (multiplication par 1)
+        #   3 : a·(b·c) --> a·b·c
+        #   4 : a·(b+c) --> a·b + a·c 
+        case Op.TIMES:
+
+            # Regle 1 : si y'a un empty, c'est cuit
+            if Empty() in (arg for arg in e.args):
+                return Empty()
+
+            # Règle 2 : on vire les ε
+            args : list[Expression] = [arg for arg in e.args if arg != Epsilon()]
+
+            # Règle 3 : si on trouve un · dans les args, on l'expand new_args
+            new_args : list[Expression] = []
+            for arg in args:
+                if arg.op == Op.TIMES:
+                    new_args += arg.args
+                else:
+                    new_args.append(arg)
+            
+            # Si, après simplification, il nous reste rien, pas besoin de distribuer
+            n : int = len(new_args)
+            if n == 0: return Epsilon()            # ε·ε --> ε   
+            if n == 1: return expand(new_args[0])  # Times(a) --> a
+
+            # Règle 4 : on distribue 
+            # 1. On cherche le premier facteur +
+            for i, arg in enumerate(new_args):
+                if arg.op == Op.PLUS:
+                    # 2. On distribue le plus sur tout le reste
+            
+                    # On extrait les termes à distribuer...
+                    termes : list[Expression] = arg.args
+                    if n == 2:
+                        k = new_args[0] if i == 1 else new_args[1]
+                    else:
+                        k = (Times(*[ new_args[j] for j in range(len(new_args)) if j!=i ]))
+
+                    # ... et on distribue
+                    e_distribuee = distribue(k, *termes) 
+
+                    # 3. Expand recursivement les nouveaux termes
+                    new_args = [arg for arg in e_distribuee.args]
+                    return expand(Plus(*new_args))  #le expand est ici pour éviter le cas ((a+b) + (c+d)) 
+
+
+            # Si on a pas de facteurs +, pas besoin de distribuer 
+            new_args = [expand(arg) for arg in new_args]
+            return Times(*new_args)
+
+
+# ============ 2 . AUTOMATES ET CONVERSION ===============
+
+# 6.
+class Automaton:
+    """Classe qui représente un automate.
+    Il est de la forme Ä = (Q, A, E, I, F)."""
+
+    def __init__(Q : list[int], A ):
+        pass
