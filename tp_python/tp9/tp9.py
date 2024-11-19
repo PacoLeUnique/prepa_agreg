@@ -13,29 +13,78 @@ class Var(Formule):
 
     def __str__(self):
         return str(self.label)
+    def __repr__(self):
+        return str(self.label)
+    
+    def __eq__(self, other):
+        return (type(self) == type(other) 
+            and self.label == other.label)
 
 class Non(Formule):
     def __init__(self, φ:Formule):
         self.formule = φ
 
     def __str__(self):
-        return f"Non({str(self.formule)})"
+        return f"¬({str(self.formule)})"
+    
+    def __repr__(self):
+        return f"¬({str(self.formule)})"
+    
+    def __eq__(self, other):
+        return (type(self) == type(other) 
+            and self.formule == other.formule)
+    
 
 class Et(Formule):
-    def __init__(self, *formules):
+    def __init__(self, *formules : list[Formule], flatten=True):
         assert all(isinstance(f, Formule) for f in formules)
-        self.formules = list(formules)
+        
+        self.formules : list[Formule] = list(formules)
+        if flatten:
+            args = []
+            for f in formules:
+                if isinstance(f, Et):
+                    args += [sf for sf in f.formules]
+                else:
+                    args += [f]
+            self.formules = args
+
 
     def __str__(self):
         return f"Et({', '.join(str(f) for f in self.formules)})"
+    def __repr__(self):
+        return f"Et({', '.join(str(f) for f in self.formules)})"
+    
+    def __eq__(self, other):
+        return (type(self) == type(other)
+            and len(self.formules) == len(other.formules)
+            and all(self.formules[i] == other.formules[i] for i in range(len(self.formules))))
+
 
 class Ou(Formule):
-    def __init__(self, *formules):
+    def __init__(self, *formules, flatten=True):
         assert all(isinstance(f, Formule) for f in formules)
-        self.formules = list(formules)
+
+        self.formules : list[Formule] = list(formules)
+        if flatten:
+            args = []
+            for f in formules:
+                if isinstance(f, Ou):
+                    args += [sf for sf in f.formules]
+                else:
+                    args += [f]
+            self.formules = args
+
 
     def __str__(self):
         return f"Ou({', '.join(str(f) for f in self.formules)})"
+    def __repr__(self):
+        return f"Ou({', '.join(str(f) for f in self.formules)})"
+
+    def __eq__(self, other):
+        return (type(self) == type(other)
+            and len(self.formules) == len(other.formules)
+            and all(self.formules[i] == other.formules[i] for i in range(len(self.formules))))
 
 
 
@@ -195,7 +244,15 @@ def width(f : Formule) -> int:
 
 
 
-# 8.
+# 8. (Le maudit.)
+def indice_et(formules : list[Formule]):
+    """Renvoie l'indice du premier Et qu'on croise."""
+
+    for i in range(len(formules)):
+        if isinstance(formules[i], Et):
+            return i
+    return None
+
 def cnf(f : Formule) -> Formule:
     """Convertit f sous forme CNF."""
 
@@ -205,7 +262,113 @@ def cnf(f : Formule) -> Formule:
         match f:
             case Var() | Non(): return f
 
-            case Et():
-                # TODO : allez bonne chance pour le round 2 fréro
+            case Et():  return Et(*(aux(sf) for sf in f.formules))
+
+            case Ou():
+
+                i = indice_et(f.formules) # i = l'indice du premier Et qu'on croise 
+                if i is None:
+                    return Ou(*(aux(sf) for sf in f.formules))
+                else:
+                    et_args : list[Formule] = [sf for sf in f.formules[i].formules]
+                    return Et(*[aux(Ou(*([arg] + f.formules[:i] + f.formules[i+1:]))) for arg in et_args])
 
     return aux(nnf(f))
+
+
+# Exo 9.
+def list_of_clause(f : Formule) -> list[int]:
+    """Renvoie la liste des valeurs de la clause.\n
+    Exemple : Non(p1) v Non(p2) v p1 --> [-1, -2, 1]
+    """
+
+    assert is_clause(f)
+
+    match f:
+        case Var(): return [f.label]
+        case Non(): return [-1 * f.formule.label]
+
+        case Ou(): return [(sf.label if isinstance(sf, Var) else -1 * sf.formule.label) for sf in f.formules]
+
+
+# Exo 10.
+def list_of_list_of_cnf(f : Formule) -> list[list[int]]:
+    """Renvoie la liste de liste de clauses de f.
+    Précondition : f est en CNF.
+    """
+
+    assert is_cnf(f)
+
+    match f:
+        case Var() | Non() | Ou(): return [list_of_clause(f)]
+        case Et(): return [list_of_clause(sf) for sf in f.formules]
+
+
+# Exo 11.
+def to_DIMACS(f : Formule) -> str:
+    """Donne la chaine DIMACS d'une formule en CNF.
+    
+    Et( Ou(a,b), Ou(Non(b), c)) --->
+        p cnf 3 2
+        1 2 0
+        -2 3 0
+    """
+
+    assert is_cnf(f)
+
+    dimacs : str = ""
+    clauses : list[list[Formule]] = list_of_list_of_cnf(f)
+
+    # 1. l'en-tête
+    x : int = max_var(f)   # Le nombres de variables
+    y : int = len(clauses) # Le nombre de clauses
+    dimacs += f"p cnf {str(x)} {str(y)}\n"
+
+    # 2. les clauses
+    for clause in clauses:
+        dimacs += " ".join((str(litteral) for litteral in ( clause+[0] ))) + "\n"
+    
+    return dimacs[:-1] #c'est juste pour effacer le \n en trop à la fin
+
+
+# ============== 3 - FORME DE TESITIN ==============
+
+# Exo 13.
+def binary_form(f : Formule):
+    """Convertit f en forme binaire. Tous les Ou et le Et trop long, ça dégage."""
+
+    match f:
+        case Var(): return f
+        
+        case Non(): return Non(binary_form(f.formule))
+
+        case Et():
+            n = len(f.formules)
+            if n > 2:
+                return Et(binary_form(Et(*(sf for sf in f.formules[:n//2]), flatten=False)), binary_form(Et(*(sf for sf in f.formules[n//2:]), flatten=False)), flatten=False)
+            else:
+                return Et(*(binary_form(sf) for sf in f.formules), flatten=False)
+
+        case Ou():
+            n = len(f.formules)
+            if n > 2:
+                return Ou(binary_form(Ou(*(sf for sf in f.formules[:n//2]), flatten=False)), binary_form(Ou(*(sf for sf in f.formules[n//2:]), flatten=False)), flatten=False)
+            else:
+                return Ou(*((sf) for sf in f.formules), flatten=False)
+            
+
+# Exo 14.
+def subformulas(f : Formule) -> list[Formule]:
+    """Renvoie la liste des sous-formules de f."""
+
+    match f:
+        case Var(): return [f]
+        case Non(): return [f] + subformulas(f.formule)
+        case Et() | Ou():
+            subforms = [f]
+            for sf in f.formules:
+                subforms += subformulas(sf)
+            return subforms
+        
+
+# Exo 15.

@@ -86,8 +86,75 @@ def exo7():
     assert width(f2) == 3
     assert width(f3) == 4
 
+
+def flatten():
+    f = Et(a, Et(b, c), a)
+    f2 = f = Et(a, Et(b, Et(c,d)), a)
+    
+    print(f)
+    print(f2)
+
+
 def exo8():
-    pass
+    f = Non(Et(a,b))
+    f2 = Non(Et(Ou(Non(a),Non(b)), Ou(Non(c),Non(d))))
+    f3 = Non(Et(Ou(a,b), Ou(c,d)))
+
+    f4 = Ou(Et(Non(a), b, Non(Et(Non(Ou(a,Et(e,e,Non(a)))), b, e, e))))
+
+    print(cnf(f))
+    print(cnf(f2))
+    print(cnf(f3))
+
+    assert is_cnf(cnf(f))
+    assert is_cnf(cnf(f2))
+    assert is_cnf(cnf(f3))
+    assert is_cnf(cnf(f4))
+
+
+def exo9():
+    f = Non(c)
+    f2 = Ou(a,b,a, Non(e))
+
+    assert list_of_clause(f) == [-3]
+    assert list_of_clause(f2) == [1,2,1,-5]
+
+def exo10():
+    f = Ou(a,b,a, Non(e))    
+    f2 = Et(Ou(c, Non(a)), Ou(d, a, Non(c)), Ou(Non(c), b), Ou(Non(d), Non(b)))
+    f3 = a
+
+    assert list_of_list_of_cnf(f) == [[1,2,1,-5]]
+    assert list_of_list_of_cnf(f2) == [[3,-1],[4,1,-3],[-3,2],[-4,-2]]
+    assert list_of_list_of_cnf(f3) == [[1]]
+
+
+def exo11():
+    f = Non(a)
+    f2 = Et(Ou(a,b), Ou(Non(b), c))
+
+    #print(to_DIMACS(f2))
+    assert to_DIMACS(f) == "p cnf 1 1\n-1 0"
+    assert to_DIMACS(f2) == "p cnf 3 2\n1 2 0\n-2 3 0"
+
+
+# 3 - Forme de Tseitin
+
+def exo13():
+    f = Ou(a,b,c,d,e,d,c,b,a)
+    f2 = Et(a,a,Non(a), Ou(b,b,Non(b), Non(b), b), a, a, Non(a))
+
+    print(binary_form(f))
+    print(binary_form(f2))
+
+def exo14():
+    f = Et(Ou(a, Non(b)))
+    f2 = Non(Non(Non(a)))
+
+    assert(subformulas(f)) == [Et(Ou(a, Non(b))), Ou(a, Non(b)), a, Non(b), b]
+    assert subformulas(f2) == [f2, Non(Non(a)), Non(a), a]
+
+
 
 
 if __name__ == '__main__':
