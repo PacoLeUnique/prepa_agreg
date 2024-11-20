@@ -245,7 +245,7 @@ def width(f : Formule) -> int:
 
 
 # 8. (Le maudit.)
-def indice_et(formules : list[Formule]):
+def indice_et(formules : list[Formule]) -> int|None:
     """Renvoie l'indice du premier Et qu'on croise."""
 
     for i in range(len(formules)):
@@ -335,26 +335,27 @@ def to_DIMACS(f : Formule) -> str:
 
 # Exo 13.
 def binary_form(f : Formule):
-    """Convertit f en forme binaire. Tous les Ou et le Et trop long, ça dégage."""
+    """Convertit f en forme binaire. Tous les Ou et les Et trop long, ça dégage."""
 
     match f:
         case Var(): return f
-        
         case Non(): return Non(binary_form(f.formule))
 
         case Et():
             n = len(f.formules)
             if n > 2:
-                return Et(binary_form(Et(*(sf for sf in f.formules[:n//2]), flatten=False)), binary_form(Et(*(sf for sf in f.formules[n//2:]), flatten=False)), flatten=False)
+                return Et(binary_form(Et(*(sf for sf in f.formules[n//2:    ]), flatten=False)), 
+                          binary_form(Et(*(sf for sf in f.formules[    :n//2]), flatten=False)), flatten=False)
             else:
                 return Et(*(binary_form(sf) for sf in f.formules), flatten=False)
 
         case Ou():
             n = len(f.formules)
             if n > 2:
-                return Ou(binary_form(Ou(*(sf for sf in f.formules[:n//2]), flatten=False)), binary_form(Ou(*(sf for sf in f.formules[n//2:]), flatten=False)), flatten=False)
+                return Ou(binary_form(Ou(*(sf for sf in f.formules[n//2:    ]), flatten=False)), 
+                          binary_form(Ou(*(sf for sf in f.formules[    :n//2]), flatten=False)), flatten=False)
             else:
-                return Ou(*((sf) for sf in f.formules), flatten=False)
+                return Ou(*(binary_form(sf) for sf in f.formules), flatten=False)
             
 
 # Exo 14.
@@ -368,7 +369,60 @@ def subformulas(f : Formule) -> list[Formule]:
             subforms = [f]
             for sf in f.formules:
                 subforms += subformulas(sf)
-            return subforms
+            return [s for s in subforms]
         
 
-# Exo 15.
+# Exo 16.
+def tseitin(f : Formule) -> Formule:
+    """Renvoie la forme de Tseitin de f, en 3-CNF.
+    Précondition : f est en format binaire, au format NNF.
+    """
+    
+    # TODO
+    #assert is_nnf_binaire(f) 
+
+    # 1. On pose les variables 
+    subforms : list[Formule] = subformulas(f)
+    m = max_var(f)      # Le nombre de variables      [p1 .. pm]
+    s = len(subforms)   # Le nombre de sous-formules  [1..s]
+
+    q : list[Var] = [Var(m+i) for i in range(1, s+1)] # [q1 .. qs]
+
+    # 2. On crée les formules q[i] => psi[i]
+    psi : list[Formule] = []
+    for i in range(s):
+
+        φ = subforms[i]
+        match φ: 
+            case Var() | Non(): # φ est un littéral
+                psi.append(Ou(Non(q[i]), φ))
+
+            case Ou():   # φ = Ou(φ[j], φ[k])
+                j = subforms.index(φ.formules[0])
+                k = subforms.index(φ.formules[1])
+                psi.append(Ou(Non(q[i]), q[j], q[k]))
+
+            case Et():    # φ = Ou(φ[j], φ[k])
+                j = subforms.index(φ.formules[0])
+                k = subforms.index(φ.formules[1])
+                psi.append(Et(Ou(Non(q[i]), q[j]), Ou(Non(q[i]), q[j])))   
+                
+
+    # 3. On range le tout dans une liste de clauses
+    clauses : list[Formule] = []
+    for i in range(s):
+        match psi[i]:
+            case Ou():  clauses.append(psi[i])
+            case Et():  clauses.extend([psi[i].formules[0], psi[i].formules[1]])
+
+    return Et(*([q[0]] + clauses))
+
+
+# Exo 18.
+def extend_affectation(f : Formule, I:Affecation) -> Affecation:
+    """Renvoie une affection qui satisfait Tsettin(f)."""
+
+    #TODO
+
+
+# PARTIE 4 =====> queens.py 

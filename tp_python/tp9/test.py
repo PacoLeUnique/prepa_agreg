@@ -1,5 +1,6 @@
 import sys
 from tp9 import *
+from queens import *
 
 a = Var(1)
 b = Var(2)
@@ -59,6 +60,8 @@ def exo5():
 
     print(nnf(f))
     print(nnf(f2))
+
+    assert nnf(f) == a
 
 def exo6():
 
@@ -154,8 +157,15 @@ def exo14():
     assert(subformulas(f)) == [Et(Ou(a, Non(b))), Ou(a, Non(b)), a, Non(b), b]
     assert subformulas(f2) == [f2, Non(Non(a)), Non(a), a]
 
+def exo15():
+    f = a
+    f2 = Ou(Et(a,b), Non(c))
 
+    assert tseitin(f) == Et(b, Ou(Non(b), a))
+    print(tseitin(f2))
 
+def test_queens():
+    queens(5)
 
 if __name__ == '__main__':
     globals()[sys.argv[1]]()
