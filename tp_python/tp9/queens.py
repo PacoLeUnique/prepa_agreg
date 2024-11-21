@@ -16,6 +16,11 @@ def queens(n):
             P[i][j] = Var(var_count)
             var_count +=1
 
-
     # 2. On modélises les contraintes
+    # 2.1 : Pas 2 reines sur la même lignes 
+    
+                                
+    # 2.2 : Pas 2 reines sur la même colonne
 
+
+    # 2.3 : Pas 2 reines sur la même diagonale 
