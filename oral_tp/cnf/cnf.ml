@@ -11,6 +11,10 @@ let get_var l = abs l
 let signe l = l > 0
 
 
+
+
+
+
 (* Exercice 2 *)
 
 (* Cherche un element dans une liste, et renvoie true si il existe. *)
@@ -42,6 +46,12 @@ let rec simplifie (l:litteral) (f:cnf) : cnf =
 
 
 
+
+
+
+
+
+
 (* Retourne la premiere clause unitaire de f, et renvoie une erreur si il n'y en a pas.*)
 let rec clause_unitaire (f:cnf) : litteral list = 
   match f with
@@ -53,13 +63,25 @@ let rec clause_unitaire (f:cnf) : litteral list =
 
 
 (* Renvoie toutes les littéraux des clauses unitaires de f, pour une variable choisie. *)
-let rec litteraux_unitaires (f:cnf) i = 
+let rec litteraux_unitaires (f:cnf) (i:int) = 
   match f with
   | [] -> []
   | clause :: f' -> 
     match clause with 
     | [l] -> if get_var l = i then l :: litteraux_unitaires f' i else litteraux_unitaires f' i 
     | _ -> litteraux_unitaires f' i
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 (* Exercice 3 - 4 *)
@@ -76,6 +98,16 @@ let rec max_var (f:cnf) : int =
   match f with
   | [] -> 0
   | c :: f' -> max (max_var_clause c) (max_var f')
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -112,6 +144,7 @@ let solve (f:cnf) : interpretation option =
     (* Attention ! aux renvoie la liste dans le sens inverse. Il faut la renverser *)
     if n=0 then None
     else 
+
       let res = (aux f 0 []) in
       match res with
       | None -> None
@@ -127,6 +160,12 @@ let solve (f:cnf) : interpretation option =
 
 (* 3. INTERPRETATIONS MUTABLES *)
 type pinterpretation = bool option array
+
+type historique = int Stack.t
+exception Incompatible
+
+
+
 
 (* Exercice 6 *)
 
@@ -157,6 +196,12 @@ let is_litteral_satisfait (p: pinterpretation) (l:litteral) =
 
   
 
+
+
+
+
+
+
 (* Exercice 7 *)
 (* Renvoie vrai si f est satisfaite dans l'interprétation partielle p. *)
 let rec is_satisfaite (f:cnf) (p:pinterpretation) = 
@@ -176,9 +221,15 @@ let is_instatisfaite f p =
   if f = [] then false else aux f p
 
 
+
+
+
+
+
+
+
+
 (* Exercice 8 *)
-type historique = int Stack.t
-exception Incompatible
 
 (* Complète une interprétation partielle pour satisfaire le littéral l. *)
 let satisfait_litteral (l:litteral) (p:pinterpretation) (h:historique) = 
@@ -195,6 +246,14 @@ let satisfait_litteral (l:litteral) (p:pinterpretation) (h:historique) =
   )
 
 
+
+
+
+
+
+
+
+
 (* Exercice 9 *)
 (* Efface chaque interprétation partielle depuis le dernier point de choix. *)
 let annule_choix (p:pinterpretation) (h:historique) = 
@@ -207,6 +266,15 @@ let annule_choix (p:pinterpretation) (h:historique) =
   if not(Stack.is_empty h) then 
     let _ = Stack.pop h in (* Et on retire le 0 *)
   ()
+
+
+
+
+
+
+
+
+
 
 
 (* Exercice 10 *)
@@ -232,6 +300,16 @@ let rec ajoute_litteraux_unitaires f p h =
       | _ -> ajoute_litteraux_unitaires f' p h
     )
     
+
+
+
+
+
+
+
+
+
+  
 
 (* Exercice 11 *)
 (* cherche une interprétaton satisfaisant f. *)
@@ -309,7 +387,7 @@ let rec string_of_cnf f = match f with
 | [] -> ""
 | clause :: f' -> "[" ^ string_of_list clause ^ "]" ^ string_of_cnf f'
 
-
+;;
 
 let test1 : cnf = [[1;2;-3];[2;3];[-1;-2;3];[-1;-3];[1;-2]] 
 let test2 : cnf = [[1;-1;-3];[-2;3];[-2]]
@@ -351,6 +429,17 @@ let sat3 = solve test3
 let sat4 = solve test4
 let sat5 = solve test5
 let sat6 = solve test6
+
+let () = assert (solve [[]] = None)
+let () = assert (solve [[1]] = Some [true])
+let () = assert (solve [[-1]] = Some [false])
+let () = assert (solve [[1]; [-1]] = None)
+
+
+let () = assert (solve [[1;-1]] = Some [true])
+let a = solve [[1;-1]] 
+
+;;
 
 ;;
 

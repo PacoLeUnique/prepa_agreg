@@ -20,7 +20,8 @@ let ins (t : 'a dlist) (vl : 'a) : unit =
   t := Some new_elm
 
 let rem (t:'a dlist) (elt:'a elt) =
-   let { prv; nxt; _ } = elt in
+   let { vl=_ ; nxt=nxt ; prv=prv } = elt in
+   
    (match prv with
    | Some p -> p.nxt <- nxt
    | None -> t := nxt);
@@ -42,7 +43,11 @@ let iter (t:'a dlist) ~(f:'a -> unit) =
 let find (t:'a dlist)  ~(f:'a -> bool) =
   let rec loop = function
     | None -> raise Not_found
-    | Some elt -> if f (vl elt) then elt else loop (next elt)
+    | Some elt -> 
+      if f (vl elt) then
+       elt
+      else
+       loop (next elt)
   in
   loop !t
 

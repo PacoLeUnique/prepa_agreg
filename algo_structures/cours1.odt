@@ -276,8 +276,8 @@
  <office:master-styles>
   <style:master-page style:name="Standard" style:page-layout-name="pm1">
    <style:header>
-    <text:p text:style-name="P1">Mardi 3 décembre</text:p>
-    <text:p text:style-name="P1">Gros prout qui p<text:tab/><text:tab/>Cours 6</text:p>
+    <text:p text:style-name="P1">Mercredi 4 décembre</text:p>
+    <text:p text:style-name="P1">Algo Structures de données<text:tab/><text:tab/>Cours 1</text:p>
    </style:header>
   </style:master-page>
  </office:master-styles>
